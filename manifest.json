@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "Flow Batch \u2014 Scene Prompt Runner",
+  "version": "2.9.0",
+  "description": "Queues a JSON scene list into Google Labs Flow, composes anchor descriptions into each prompt, and auto-downloads every result named by scene ID.",
+  "permissions": [
+    "storage",
+    "downloads",
+    "scripting",
+    "tabs",
+    "debugger",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://labs.google/*",
+    "https://*.googleusercontent.com/*",
+    "https://*.gstatic.com/*",
+    "https://storage.googleapis.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Flow Batch"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://labs.google/fx/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ]
+}

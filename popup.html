@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Flow Batch</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+
+  <header>
+    <h1>Flow Batch</h1>
+    <button id="reload" class="icon" title="Re-check the page">&#8635;</button>
+  </header>
+
+  <!-- Status card: always visible, always says what to do next -->
+  <div id="card" class="card">
+    <div class="card-head">
+      <span id="cardDot" class="dot"></span>
+      <strong id="cardTitle">Checking the page…</strong>
+    </div>
+    <p id="cardBody" class="card-body"></p>
+    <div id="cardActions" class="card-actions"></div>
+  </div>
+
+  <!-- Running -->
+  <section id="progressBox" hidden>
+    <div class="bar">
+      <div id="barFill"></div>
+    </div>
+    <div class="progress-row">
+      <span id="progressCount">0 of 60</span>
+      <span id="progressEta" class="muted"></span>
+    </div>
+    <div class="row">
+      <button id="pause">Pause</button>
+      <button id="stop" class="danger">Stop</button>
+    </div>
+  </section>
+
+  <!-- Idle: what will run -->
+  <section id="setupBox">
+    <div class="line">
+      <div>
+        <div id="specName">No prompts loaded</div>
+        <div id="specMeta" class="muted">Paste your prompts, or open a file</div>
+      </div>
+      <button id="changeSpec" class="link">Change…</button>
+    </div>
+
+    <div id="specPanel" hidden>
+      <div class="row">
+        <button id="pickFile" class="small">Open a file…</button>
+        <input type="file" id="fileInput" accept=".txt,.json,.md,text/plain,application/json" hidden>
+      </div>
+      <textarea id="spec" spellcheck="false"
+        placeholder="Paste your prompts here — one per paragraph, with a blank line between them.&#10;&#10;Drag a .txt file onto this box, or click Open a file…"></textarea>
+      <div id="specError" class="error" hidden></div>
+      <details id="formatHelp">
+        <summary>How to write the list</summary>
+        <div class="pad">
+          <p class="muted">The simplest version is just your prompts, one per paragraph:</p>
+          <pre class="sample">A close-up of coarse salt in a scarred hand.
+
+A dark kitchen with brass vessels on a shelf.</pre>
+          <p class="muted">Add characters once, then tag the prompts that use them. Add a STYLES block
+            for wording you'd otherwise repeat in every prompt — it gets appended automatically:</p>
+          <pre class="sample">SETTINGS
+name: my-images
+aspect ratio: 16:9
+
+CHARACTERS
+sudha: Sudha — a 43-year-old woman, greying hair…
+
+STYLES
+kitchen: Photorealistic, deep ochre, film grain, 8k.
+
+PROMPTS
+characters: sudha
+style: kitchen
+A close-up of coarse salt in a scarred hand.
+
+opening-shot:
+style: kitchen
+A dark kitchen with brass vessels on a shelf.</pre>
+          <p class="muted">Every section is optional. Name a prompt by starting its block with
+            <code>opening-shot:</code>, otherwise they're numbered for you. If a prompt needs blank
+            lines inside it, separate prompts with <code>---</code> instead.
+          </p>
+        </div>
+      </details>
+    </div>
+
+    <ul id="sceneList" hidden></ul>
+
+    <button id="testOne" class="secondary">Test with 1 image first</button>
+    <button id="start" class="primary">Start all images</button>
+    <p class="footnote">Keep this Flow tab visible while it runs.<br>
+      Saved to <strong>Downloads › FlowBatch › <span id="folderName">your set</span></strong>
+      <button id="openFolder" class="link">Open folder</button>
+    </p>
+  </section>
+
+  <!-- Results -->
+  <section id="resultsBox" hidden>
+    <div class="line">
+      <h2>Results</h2>
+      <div class="row-tight">
+        <button id="retryFailed" class="link" hidden>Retry failed</button>
+        <button id="clearLog" class="link">Clear</button>
+      </div>
+    </div>
+    <ul id="log"></ul>
+  </section>
+
+  <details id="settings">
+    <summary>Settings</summary>
+    <div class="pad">
+      <label class="check"><input type="checkbox" id="includeAnchors" checked>
+        <span>Add character descriptions to each prompt<em>Keeps wardrobe and age consistent across
+            scenes</em></span></label>
+      <label class="check"><input type="checkbox" id="appendFormat" checked>
+        <span>Add aspect ratio and image size<em>Written into the prompt as text</em></span></label>
+      <button id="preview" class="small">Preview the first prompt</button>
+      <div id="previewWrap" hidden>
+        <div class="preview-head">
+          <span class="muted">Exactly what gets sent</span>
+          <button id="previewClose" class="icon" title="Close preview">&times;</button>
+        </div>
+        <pre id="previewOut"></pre>
+      </div>
+      <div class="grid">
+        <label>Wait between images <input type="number" id="gapSec" value="3" min="0" max="120"><em>seconds</em></label>
+        <label>Give up after <input type="number" id="timeoutSec" value="240" min="30"
+            max="900"><em>seconds</em></label>
+        <label>Tries per image <input type="number" id="retries" value="2" min="1" max="5"><em></em></label>
+        <label>Only these scenes <input type="text" id="only" placeholder="all"><em>e.g. scene_01,
+            thumbnail</em></label>
+      </div>
+      <label class="check"><input type="checkbox" id="dryRun">
+        <span>Practice mode<em>Sends prompts but doesn't wait or save. For checking the prompt
+            lands.</em></span></label>
+      <label class="check"><input type="checkbox" id="saveLog" checked>
+        <span>Save a run log<em>One timestamped JSON per run, next to the images, recording the exact prompt, resolution
+            and any failures.</em></span></label>
+      <label class="check"><input type="checkbox" id="trustedInput" checked>
+        <span>Use real keyboard and mouse<em>Types and clicks through Chrome itself, so Flow can't tell it apart from
+            you. Chrome shows a "being debugged" banner while a run is active. Turn off only if that banner is a
+            problem.</em></span></label>
+    </div>
+  </details>
+
+  <details id="fixit">
+    <summary>Page detection</summary>
+    <div class="pad">
+      <p class="muted">Flow's layout changes between updates. If Flow Batch can't find something,
+        point at it once and it'll be remembered.</p>
+      <pre id="probeOut" class="probe"></pre>
+      <div class="row wrap">
+        <button id="watchTyping" class="small">Teach it by typing</button>
+        <button data-teach="promptSelector" class="small">Show me the prompt box</button>
+        <button data-teach="submitSelector" class="small">Show me the generate button</button>
+        <button data-teach="resultSelector" class="small">Show me where images appear</button>
+      </div>
+      <div class="line">
+        <button id="copyDiag" class="link">Copy diagnostics</button>
+        <button id="clearTaught" class="link danger">Forget what I taught it</button>
+      </div>
+    </div>
+  </details>
+
+  <script src="parse.js"></script>
+  <script src="popup.js"></script>
+</body>
+
+</html>

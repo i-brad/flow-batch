@@ -1,0 +1,24 @@
+.flow-batch-banner {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2147483647;
+  background: #111;
+  color: #fff;
+  font: 500 13px/1.4 system-ui, -apple-system, sans-serif;
+  padding: 8px 16px;
+  border-radius: 999px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  max-width: 80vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.flow-batch-hi {
+  outline: 2px solid #ff3b30 !important;
+  outline-offset: 1px !important;
+  cursor: crosshair !important;
+}
